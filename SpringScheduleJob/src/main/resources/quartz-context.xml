@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+                            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+                            http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd">
+
+	<context:component-scan base-package="com.wesdm.springschedulejob"></context:component-scan>
+
+	<!-- For times when you just need simple task scheduling -->
+	<!-- <task:executor id="myExecutor" pool-size="5-15" -->
+	<!-- queue-capacity="20" /> -->
+	<!-- <task:scheduler id="myScheduler" pool-size="10" /> -->
+
+	<!-- method must take no parameters -->
+	<!-- <task:scheduled-tasks scheduler="myScheduler"> -->
+	<!-- <task:scheduled ref="scheduledTask" method="doIt" -->
+	<!-- fixed-delay="5000" initial-delay="1000" /> -->
+	<!-- <task:scheduled ref="scheduledTask" method="returnSomething" -->
+	<!-- cron="0 0/1 * 1/1 * ?" /> -->
+	<!-- </task:scheduled-tasks> -->
+
+
+	<!--For times when you need more complex processing, passing data to the 
+		scheduled job -->
+	<bean name="complexJob"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass"
+			value="com.wesdm.springschedulejob.quartzscheduler.QuartzJob" />
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="jobState" value-ref="jobDataBean" />
+				<entry key="jobLatch" value-ref="jobLatch" />
+			</map>
+		</property>
+	</bean>
+
+	<bean name="jobDataBean"
+		class="com.wesdm.springschedulejob.quartzscheduler.MyJobHelper">
+		<constructor-arg index="0">
+			<value>Spring Quartz Example</value>
+		</constructor-arg>
+	</bean>
+
+	<bean id="jobTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="repeatInterval" value="1000" />
+		<property name="repeatCount" value="7" />
+		<property name="jobDetail" ref="complexJob" />
+	</bean>
+
+	<bean id="cronTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="complexJob" />
+		<property name="cronExpression" value="0/2 * * * * ?" />
+	</bean>
+
+	<!-- For times when you just need to invoke a method on a specific object -->
+
+	<bean id="simpleJobTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="simpleJob" />
+		<property name="cronExpression" value="0/2 * * * * ?" />
+	</bean>
+
+	<bean id="simpleJob"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="scheduledTask" />
+		<property name="targetMethod" value="doIt" />
+		<property name="concurrent" value="false" />
+	</bean>
+
+	<!-- Dynamic Cron Jobs are configured in AppConfig.java -->
+
+
+	<!-- Schedule all jobs -->
+
+	<bean id="scheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+<!-- 		<property name="triggers"> -->
+<!-- 			<list> -->
+<!-- 				<ref bean="jobTrigger" /> -->
+<!-- 				<ref bean="simpleJobTrigger" /> -->
+<!-- 			</list> -->
+<!-- 		</property> -->
+	</bean>
+
+</beans>
